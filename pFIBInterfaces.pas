@@ -51,19 +51,22 @@ type
   ISQLStatMaker = interface
   ['{39477B70-12C9-4F70-993E-0E1067A8D649}']
 // For Statistics
-   function    FixStartTime(const ObjName,VarName:string):Integer;
-   function    FixEndTime(const ObjName,VarName:string):Integer;
-   function    GetVarInt(const ObjName,VarName:string):Integer;
-   function    GetVarStr(const ObjName,VarName:string):string;
+   function    FixStartTime(const ObjName,VarName:string):Int64;
+   function    FixEndTime(const ObjName,VarName:string):Int64;
+   function    GetVarInt(const ObjName,VarName:string):Int64; overload;
+   function    GetVarInt(const index: Integer; VarName:string):Int64; overload;
+   function    GetVarStr(const ObjName,VarName:string):string; overload;
+   function    GetVarStr(const index: Integer; VarName:string):string; overload;
    function    IncCounter(const ObjName,VarName:string):Integer;
    procedure   SetNull(const ObjName,VarName:string);
    procedure   SetStringValue(const ObjName,VarName,Value:string);
-   function    AddIntValue(const ObjName,VarName:string;Value:integer):integer;
-   procedure   SetIntValue(const ObjName,VarName:string;Value:integer);
+   function    AddIntValue(const ObjName,VarName:string;Value:Int64):Int64;
+   procedure   SetIntValue(const ObjName,VarName:string;Value:Int64);
 //
    procedure   AddToStrings(const ObjName,VarName,Value:string);
    procedure   ClearStrings(const ObjName,VarName:string);
-   function    GetVarStrings(const ObjName,VarName:string):TStrings;
+   function    GetVarStrings(const ObjName,VarName:string):TStrings; overload;
+   function    GetVarStrings(const index: Integer; VarName: string): TStrings; overload;
    procedure   Clear;
 
    procedure   SetActiveStatistics(const Value:boolean);

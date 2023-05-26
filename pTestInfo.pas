@@ -1,4 +1,4 @@
-{***************************************************************}
+﻿{***************************************************************}
 { FIBPlus - component library for direct access to Firebird and }
 { InterBase databases                                           }
 {                                                               }
@@ -55,22 +55,28 @@ uses {$IFNDEF D6+}Windows,{$ELSE}FIBPlatforms,{$ENDIF}SysUtils,Classes,pFIBInter
        public
         constructor Create;
         destructor  Destroy; override;
-        function    FixStartTime(const ObjName,VarName:string):Integer;
-        function    FixEndTime(const ObjName,VarName:string):Integer;
-        function    GetVarInt(const ObjName,VarName:string):Integer;
-        function    GetVarStr(const ObjName,VarName:string):string;
+        function    FixStartTime(const ObjName,VarName:string):Int64;
+        function    FixEndTime(const ObjName,VarName:string):Int64;
+        function    GetVarInt(const ObjName,VarName:string):Int64; overload;
+        function    GetVarStr(const ObjName,VarName:string):string; overload;
+
         function    IncCounter(const ObjName,VarName:string):Integer;
         procedure   SetNull(const ObjName,VarName:string);
         procedure   SetStringValue(const ObjName,VarName,Value:string);
-        procedure   SetIntValue(const ObjName,VarName:string;Value:integer);
-        function    AddIntValue(const ObjName,VarName:string;Value:integer):integer;
+        procedure   SetIntValue(const ObjName,VarName:string;Value:Int64); overload;
+        function    AddIntValue(const ObjName,VarName:string;Value:Int64):Int64;
 
         procedure   AddToStrings(const ObjName,VarName,Value:string);
         procedure   ClearStrings(const ObjName,VarName:string);
-        function    GetVarStrings(const ObjName,VarName:string):TStrings;
+        function    GetVarStrings(const ObjName,VarName:string):TStrings; overload;
 
         function    ObjCount:integer;
         function    ObjName(Index:integer) :String;
+        function    ObjList(Index: integer): TObjStringList;
+        function    GetVarStrings(const index: Integer; VarName: string): TStrings; overload;
+        function    GetVarInt(const index: Integer; VarName:string):Int64; overload;
+        function    GetVarStr(const index: Integer; VarName:string):string; overload;
+        procedure   SetIntValue(const index: Integer; VarName:string;Value:Int64); overload;
         procedure   Clear;
         procedure   SortStatisticsForPrint(const VarName:String;Ascending:boolean);
         procedure   LogVarValues(const ObjName:String;const FileName:String);
@@ -86,8 +92,8 @@ uses {$IFNDEF D6+}Windows,{$ELSE}FIBPlatforms,{$ENDIF}SysUtils,Classes,pFIBInter
 
        TTestVarValues=class (TCallObject)
        private
-        FValue:integer;
-        FBufValue:integer;
+        FValue:Int64;
+        FBufValue:Int64;
         FStringVal:string;
         FLogStrValue:boolean;
         FDoLog :boolean;
@@ -112,7 +118,8 @@ function  TestExecFuncStr(Func:TTestFuncStr;Count:integer):string;
 
 implementation
 
-
+uses
+  math;
 
 procedure TestExecProc(Proc:TTestProc;Count:integer);
 var i:integer;
@@ -158,7 +165,7 @@ constructor TTestInfo.Create;
 begin
  inherited Create;
  FPrintListActual:=false;
- FTestVars:=TObjStringList.Create(Self,true);
+ FTestVars:=TObjStringList.Create(Self,false); //aUseHash: Hash function does not seem to work well anymore (problems observed with Delphi 11)
  FLogFileName:='';
  FPrintList  :=TList.Create;
  FLastObjName:='';
@@ -283,7 +290,7 @@ begin
  end
 end;
 
-function TTestInfo.AddIntValue(const ObjName,VarName:string;Value:integer):integer;
+function TTestInfo.AddIntValue(const ObjName,VarName:string;Value:Int64):Int64;
 var
  b:boolean;
 begin
@@ -295,7 +302,7 @@ begin
  end
 end;
 
-procedure TTestInfo.SetIntValue(const ObjName,VarName:string;Value:integer);
+procedure TTestInfo.SetIntValue(const ObjName,VarName:string;Value:Int64);
 var b:boolean;
 begin
  with GetVariable(ObjName,VarName,b) do
@@ -317,7 +324,7 @@ begin
  end
 end;
 
-function TTestInfo.FixStartTime(const ObjName,VarName:string):Integer;
+function TTestInfo.FixStartTime(const ObjName,VarName:string):Int64;
 var
     b:boolean;
     tv:TTestVarValues;
@@ -326,23 +333,33 @@ begin
  tv:= GetVariable(ObjName,VarName,b);
  with tv  do
  begin
+  {$IFDEF WINDOWS}
+  FBufValue := FIBGetTickCountHR;
+  {$ELSE}
   FBufValue := FIBGetTickCount;
+  {$ENDIF}
   Result := FBufValue;
   FLogStrValue := false;
  end
 end;
 
 {$WARNINGS OFF}
-function TTestInfo.FixEndTime(const ObjName,VarName:string):Integer;
+function TTestInfo.FixEndTime(const ObjName,VarName:string):Int64;
 var
     b:boolean;
     tv:TTestVarValues;
+    elapsed : double;
 begin
 
  tv:= GetVariable(ObjName,VarName,b);
  with  tv do
  begin
+  {$IFDEF WINDOWS}
+  elapsed := 1000000 * ((FIBGetTickCountHR - FBufValue) / FIBGetTickCountFQ); //Microsecond (µs)
+  FValue := Round(elapsed);
+  {$ELSE}
   FValue := FIBGetTickCount - FBufValue;
+  {$ENDIF}
   Result:=FValue;
   FLogStrValue:=false;
  end;
@@ -360,7 +377,7 @@ begin
  end;
 end;
 
-function TTestInfo.GetVarInt(const ObjName,VarName:string):Integer;
+function TTestInfo.GetVarInt(const ObjName,VarName:string):Int64;
 var
    b:boolean;
 begin
@@ -440,6 +457,51 @@ end;
 function TTestInfo.ObjName(Index: integer): String;
 begin
  Result:=FTestVars[Index]
+end;
+
+function TTestInfo.ObjList(Index: integer): TObjStringList;
+begin
+ Result:=TObjStringList(FTestVars.Objects[Index])
+end;
+
+function TTestInfo.GetVarStrings(const index: Integer; VarName: string): TStrings;
+var
+ b: Boolean;
+ p: TPosition;
+begin
+   p.x := index;
+   p.Y := ObjList(index).FindObject(VarName,TTestVarValues,b);
+   Result := Variable[p].FStrings;
+end;
+
+function TTestInfo.GetVarInt(const index: Integer; VarName:string):Int64;
+var
+ b: Boolean;
+ p: TPosition;
+begin
+   p.x := index;
+   p.Y := ObjList(index).FindObject(VarName,TTestVarValues,b);
+   Result := Variable[p].FValue;
+end;
+
+function TTestInfo.GetVarStr(const index: Integer; VarName:string):string;
+var
+ b: Boolean;
+ p: TPosition;
+begin
+   p.x := index;
+   p.Y := ObjList(index).FindObject(VarName,TTestVarValues,b);
+   Result := Variable[p].FStringVal;
+end;
+
+procedure TTestInfo.SetIntValue(const index: Integer; VarName:string;Value:Int64);
+var
+ b: Boolean;
+ p: TPosition;
+begin
+   p.x := index;
+   p.Y := ObjList(index).FindObject(VarName,TTestVarValues,b);
+   Variable[p].FValue := Value;
 end;
 
 procedure TTestInfo.AddToStrings(const ObjName, VarName, Value: string);

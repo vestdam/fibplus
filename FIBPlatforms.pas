@@ -70,6 +70,10 @@ type
 {$ENDIF}
 
  function FIBGetTickCount: Cardinal;
+ {$IFDEF WINDOWS}
+ function FIBGetTickCountHR: Int64;
+ function FIBGetTickCountFQ: Int64;
+ {$ENDIF}
  procedure TerminateApplication;
  function ApplicationPath:string;
  function CurrentThreadID:DWORD;
@@ -116,6 +120,16 @@ end;
    function FIBGetTickCount: Cardinal;
    begin
       Result := Windows.GetTickCount;
+   end;
+
+   function FIBGetTickCountHR: Int64;
+   begin
+      QueryPerformanceCounter(Result);
+   end;
+
+   function FIBGetTickCountFQ: Int64;
+   begin
+      QueryPerformanceFrequency(Result);
    end;
 
    procedure TerminateApplication;
