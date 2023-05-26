@@ -86,7 +86,7 @@ type
 // ISQLLogger
    procedure   WriteData(const ObjectName,OperationName,EventText: String;
     DataType: TLogFlag
-   );
+   ); Virtual;
 
 
   public
@@ -99,7 +99,7 @@ type
     function    ExistStatisticsTable:boolean;
     procedure   CreateStatisticsTable;
     procedure   SaveStatisticsToDB(ForMaxExecTime:integer=0);
-    procedure   SaveLog;
+    procedure   SaveLog; Virtual;
     property    Database   :TFIBDatabase read FDatabase  ;
     property    StatisticsMaker:ISQLStatMaker read GetStatMaker implements ISQLStatMaker;
     property    Logger:ISQLLogger read GetLogger;
@@ -186,10 +186,10 @@ begin
 
    q.SQL.Text :=
     'CREATE TABLE FIB$APP_STATISTICS ( ID INTEGER NOT NULL, '+
-    'APP_ID VARCHAR(12), SQL_TEXT BLOB SUB_TYPE -2 SEGMENT SIZE 1,'+
-    'EXECUTECOUNT INTEGER, PREPARECOUNT INTEGER, SUMTIMEEXECUTE INTEGER, AVGTIMEEXECUTE INTEGER,'+
-    'MAXTIMEEXECUTE INTEGER, MAXTIME_PARAMS BLOB SUB_TYPE -2 SEGMENT SIZE 1,'+
-    'LASTTIMEEXECUTE INTEGER, LOG_DATE '+
+    'APP_ID VARCHAR(12), SQL_TEXT BLOB SUB_TYPE TEXT SEGMENT SIZE 1,'+
+    'EXECUTECOUNT INTEGER, PREPARECOUNT INTEGER, SUMTIMEEXECUTE BIGINT, AVGTIMEEXECUTE BIGINT,'+
+    'MAXTIMEEXECUTE BIGINT, MAXTIME_PARAMS BLOB SUB_TYPE TEXT SEGMENT SIZE 1,'+
+    'LASTTIMEEXECUTE BIGINT, LOG_DATE '+
      iifStr(FDatabase.SQLDialect<2,'DATE','TIMESTAMP')+
     ' ,CMP_NAME VARCHAR(256), ATTACHMENT_ID INTEGER)';
    q.ExecQuery;
@@ -231,9 +231,10 @@ begin
 end;
 
 procedure TFIBSQLLogger.SaveStatisticsToDB(ForMaxExecTime:integer=0);
-var i:integer;
+var i,j:integer;
     q:TFIBQuery;
-    s:string;
+    s:TStrings;
+    text:string;
 begin
  if not ExistStatisticsTable then
   raise Exception.Create(SFIBStatNoSave);
@@ -241,33 +242,41 @@ begin
   raise Exception.Create(SFIBStatNoSaveAppID);
  tr.DefaultDatabase:=FDatabase;
  q:=  GetQueryForUse(tr,
-   'Insert into FIB$APP_STATISTICS '+
+   'UPDATE OR INSERT INTO FIB$APP_STATISTICS '+
    '( APP_ID, SQL_TEXT, EXECUTECOUNT,PREPARECOUNT, SUMTIMEEXECUTE , AVGTIMEEXECUTE ,  MAXTIMEEXECUTE ,'+
    'LASTTIMEEXECUTE, MAXTIME_PARAMS, CMP_NAME,ATTACHMENT_ID) '+
-   'Values (?AP,?S,?E,?PC,?SU,?A,?M,?L,?MP,?C,?AT)'
+   'Values (?AP,?S,?E,?PC,?SU,?A,?M,?L,?MP,?C,?AT) MATCHING (APP_ID, SQL_TEXT)'
  );
  with FAppStatInfo do
  try
   tr.StartTransaction;
   for i :=0  to Pred(ObjCount) do
-  if (ForMaxExecTime=0) or (GetVarInt(ObjName(i),scMaxTimeExecute)>=ForMaxExecTime) then
+  if ((ForMaxExecTime=0) or (GetVarInt(i,scMaxTimeExecute)>=ForMaxExecTime)) And (GetVarInt(i,'LogFlag1') > 0) then
   begin
    q.ParamByName('S' ).asString :=ObjName(i);
    q.ParamByName('AP').asString :=FApplicationID;
-   q.ParamByName('E').asInteger:=GetVarInt(ObjName(i),scExecuteCount);
-   q.ParamByName('PC').asInteger :=GetVarInt(ObjName(i),scPrepareCount);   
-   q.ParamByName('SU').asInteger:=GetVarInt(ObjName(i),scSumTimeExecute);
-   q.ParamByName('A').asInteger:=GetVarInt(ObjName(i),scAvgTimeExecute);
-   q.ParamByName('M').asInteger:=GetVarInt(ObjName(i),scMaxTimeExecute);
-   q.ParamByName('L').asInteger:=GetVarInt(ObjName(i),scLastTimeExecute);
-   q.ParamByName('C').asString :=GetVarStr(ObjName(i),scLastQuery);
+   q.ParamByName('E').asInteger:=GetVarInt(i,scExecuteCount);
+   q.ParamByName('PC').asInteger :=GetVarInt(i,scPrepareCount);   
+   q.ParamByName('SU').AsInt64:=GetVarInt(i,scSumTimeExecute);
+   q.ParamByName('A').AsInt64:=GetVarInt(i,scAvgTimeExecute);
+   q.ParamByName('M').AsInt64:=GetVarInt(i,scMaxTimeExecute);
+   q.ParamByName('L').AsInt64:=GetVarInt(i,scLastTimeExecute);
+   q.ParamByName('C').asString :=GetVarStr(i,scLastQuery);
    q.ParamByName('AT').asInteger:=FDatabase.AttachmentID;
-   s:= GetVarStrings(ObjName(i),scMaxTimeExecute).Text;
-   if s<>'' then
-    q.ParamByName('MP').asString:=s
+   s:= GetVarStrings(i,scMaxTimeExecute);
+   text := '';
+   for j := 0 to s.count - 1 do
+   begin
+     if j > 0 then
+       text := text + ', ';
+     text := text + s[j];
+   end;
+   if text<>'' then
+    q.ParamByName('MP').asString:= text
    else
     q.ParamByName('MP').IsNull:=true;
    q.ExecQuery;
+   SetIntValue(i,'LogFlag1',0);
   end;
  finally
    FreeQueryForUse(q);
@@ -388,13 +397,23 @@ begin
   if (FStream = nil) then
   begin
     if not FileExists(FLogFileName) then
-      FStream := TFileStream.Create(FLogFileName, fmCreate or fmShareDenyNone)
+    begin
+      FStream := TFileStream.Create(FLogFileName, fmCreate or fmShareDenyNone);
+      {$IFDEF WINDOWS}
+      FLogList.WriteBOM := True;
+      {$ENDIF}
+    end
     else
+    begin
       FStream := TFileStream.Create(FLogFileName, fmOpenWrite or fmShareDenyNone);
+      {$IFDEF WINDOWS}
+      FLogList.WriteBOM := False;
+      {$ENDIF}
+    end;
   end;
   try
    FStream.Seek(0, soFromEnd);
-   FLogList.SaveToStream(FStream);
+   FLogList.SaveToStream(FStream, TEncoding.UTF8);
    FLogList.Clear;
   finally
    FStream.Free;

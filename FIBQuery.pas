@@ -3784,6 +3784,7 @@ begin
  if Assigned(Database.SQLStatisticsMaker) and  Database.SQLStatisticsMaker.ActiveStatistics then
  with Database.SQLStatisticsMaker do
  begin
+  SetIntValue(stText,'LogFlag1',1);
   SetStringValue(stText,scLastQuery,CmpFullName(Self));
   FixStartTime(stText,scLastTimeExecute);
   IncCounter(stText,scExecuteCount);
@@ -3801,7 +3802,8 @@ begin
 end;
 
 procedure TFIBQuery.EndStatisticExec(const stText:string);
-var lt,s,j:integer;
+var j:integer;
+    lt,s:int64;
     ts:TStrings;
 begin
  if Assigned(Database.SQLStatisticsMaker) and  Database.SQLStatisticsMaker.ActiveStatistics then
