@@ -792,7 +792,8 @@ begin
       isc_dpb_sys_user_name, isc_dpb_license, isc_dpb_encrypt_key,
       isc_dpb_lc_messages, isc_dpb_lc_ctype,
       isc_dpb_sql_role_name,isc_dpb_sql_dialect,
-      isc_dpb_old_file,isc_dpb_sys_encrypt_password:
+      isc_dpb_old_file,isc_dpb_sys_encrypt_password,
+      isc_dpb_set_bind:
       begin
         if DPBVal = isc_dpb_sql_dialect then
           param_value[1] := AnsiChar(Ord(param_value[1]) - 48);
@@ -821,8 +822,8 @@ begin
       isc_dpb_num_buffers, isc_dpb_dbkey_scope, isc_dpb_force_write,
       isc_dpb_no_reserve, isc_dpb_damaged, isc_dpb_verify,
       isc_dpb_dummy_packet_interval, isc_dpb_connect_timeout,
-      isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size,isc_dpb_shutdown_delay
-      :
+      isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size,
+      isc_dpb_shutdown_delay, isc_dpb_parallel_workers:
       begin
         DPB := DPB +AnsiChar(DPBVal) +#1+AnsiChar(StrToInt(param_value));
         Inc(DPBLength, 3);
@@ -1042,7 +1043,8 @@ begin
    AddObject('no_db_triggers',TObject(isc_dpb_no_db_triggers));
    AddObject('set_db_charset',TObject(isc_dpb_set_db_charset));
    AddObject('utf8_filename',TObject(isc_dpb_utf8_filename));
-
+   AddObject('parallel_workers',TObject(isc_dpb_parallel_workers));
+   AddObject('set_bind',TObject(isc_dpb_set_bind));
 
   // Sorted:=true;
   end;
