@@ -1883,7 +1883,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsTime(aValue: TDateTime);
 begin
-  AsTimeStamp:=DateTimeToTimeStamp(aValue);
+  AsTimeStamp:=DateTimeToTimeStamp(Frac(aValue));
 end;
 
 procedure TFIBXSQLVAR.SetAsDate(aValue: TDateTime);
