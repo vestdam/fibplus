@@ -1821,8 +1821,8 @@ const
   isc_dpb_SQL_dialect            =         63;
   isc_dpb_set_db_readonly        =         64;
   isc_dpb_set_db_SQL_dialect     =         65;
-  isc_dpb_gfix_attach		     =         66;
-  isc_dpb_gstat_attach		     =         67;
+  isc_dpb_gfix_attach		         =         66;
+  isc_dpb_gstat_attach		       =         67;
 
 //FB2.5
  isc_dpb_set_db_charset          =         68;
@@ -1830,12 +1830,18 @@ const
  isc_dpb_address_path            =         70;
  isc_dpb_process_id              =         71;
  isc_dpb_no_db_triggers          =         72;
- isc_dpb_trusted_auth	      	 =         73;
+ isc_dpb_trusted_auth	      	   =         73;
  isc_dpb_process_name            =         74;
- isc_dpb_trusted_role	       	 =         75;
- isc_dpb_org_filename		     =         76;
+ isc_dpb_trusted_role	       	   =         75;
+ isc_dpb_org_filename		         =         76;
  isc_dpb_utf8_filename	      	 =         77;
- isc_dpb_ext_call_depth		     =         78;
+ isc_dpb_ext_call_depth		       =         78;
+
+//FB4
+ isc_dpb_set_bind		             =         93;
+
+//FB5
+ isc_dpb_parallel_workers		     =         100;
 
 //IB 2007
   isc_dpb_gbak_ods_version       =         68;
