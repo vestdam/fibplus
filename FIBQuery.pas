@@ -2317,10 +2317,15 @@ begin
     varCurrency:
       AsCurrency := Value;
     varBoolean:
-      if Value then
-        AsVariant := VariantTrue
-      else
-        AsVariant := VariantFalse;
+      case sSQLType of
+        FB3_SQL_BOOLEAN:
+          AsBoolean := Value;
+        else
+          if Value then
+            AsVariant := VariantTrue
+          else
+            AsVariant := VariantFalse;
+      end;
     varDate:
      case sSQLType of
       SQL_TYPE_TIME: AsTime:=Value;
@@ -2570,7 +2575,9 @@ begin
   Result := False;
   if not IsNull then
     case FXSQLVAR^.sqltype and (not 1) of
-      FB3_SQL_BOOLEAN,SQL_BOOLEAN,SQL_SHORT:
+      FB3_SQL_BOOLEAN:
+        Result := PByte(FXSQLVAR^.sqldata)^=ISC_TRUE;
+      SQL_BOOLEAN,SQL_SHORT:
         Result := PShort(FXSQLVAR^.sqldata)^=ISC_TRUE;
       SQL_LONG:
        Result  := PLong(FXSQLVAR^.sqldata)^=ISC_TRUE;

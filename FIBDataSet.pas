@@ -1968,8 +1968,6 @@ begin
  end;
 end;
 
-
-
 function  TFIBWideStringField.GetBytesValue(var Value: FIBByteString): Boolean;
 begin
     if not Assigned(FReservedBuffer) then
@@ -2011,17 +2009,18 @@ begin
    Result:=False
 end;
 
-
 function TFIBWideStringField.GetAsString: string;
 begin
-   if GetDataToReserveBuffer then
-     Result:=PWideChar(FReservedBuffer)
-   else
-     Result:=''
+  if FieldKind <> fkData then
+  begin
+    Result := inherited;
+    Exit;
+  end;
+  if GetDataToReserveBuffer then
+    Result := PWideChar(FReservedBuffer)
+  else
+    Result := '';
 end;
-
-
-
 
 function TFIBWideStringField.GetAsNativeData: FIBByteString ;
 begin
@@ -11636,12 +11635,12 @@ begin
     FValidatingFieldBuffer:=Buffer;
     FValidatedField:=Field;
     FValidatedRec:= ActiveRecord;
-    Field.OnValidate(Field);
+    Field.Validate(Buffer);
    finally
      Exclude(FRunState,drsInFieldValidate);
-     FValidatingFieldBuffer:=nil;     
+     FValidatingFieldBuffer:=nil;
    end;
-  end; 
+  end;
 end;
 
 {$IFDEF D_XE3}
