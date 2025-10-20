@@ -11563,6 +11563,9 @@ const
    {$IFDEF D2010+}
       , ord(ftUnknown) ,    ord(ftUnknown), ord(ftUnknown)
     {$ENDIF}
+    {$IFDEF D13+}
+      , ord(ftUnknown)
+    {$ENDIF}
     );
 
 var CalcFieldsList:TList;

@@ -184,7 +184,17 @@
   {$DEFINE D_29}
 {$ENDIF}
 
+// DX13
+{$IFDEF VER370}
+  {$DEFINE D_37}
+{$ENDIF}
+
 //---------------------------------
+
+{$IFDEF D_37}
+  {$DEFINE D_29}
+  {$DEFINE D13+}
+{$ENDIF}
 
 {$IFDEF D_29}
   {$DEFINE D_28}
